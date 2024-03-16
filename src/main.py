@@ -3,11 +3,14 @@
 
 import argparse
 import logging
+from operator import indexOf
 import os
+import random
 import sys
 from typing import Final
 
 from ruamel.yaml import YAML
+from ruamel.yaml.comments import CommentedSeq
 
 from sca import SCA
 
@@ -41,10 +44,11 @@ def main() -> None:
         raise Exception(f"Baseline file not found at path: {baseline}")
 
     with open(baseline, mode='r', encoding=ENCODING) as f:
-        yaml = YAML(typ='safe')
-        yml = yaml.load(f)
-        if yml:
-            s = SCA.from_dict(yml)
+        yaml = YAML()
+        sca_yml = yaml.load(f)
+
+        if sca_yml:
+            s = SCA.from_dict(sca_yml)
 
             print("SCA POLICY:")
             print(f"POLICY NAME:\t\t{s.policy.name}")
@@ -64,6 +68,32 @@ def main() -> None:
                 if check.remediation:
                     print(f"REMEDIATION:\t{check.remediation}")
                 print()
+
+            selected_indices: list[int] = [x for x
+                                           in random.choices(range(0, check_count), k=10)]
+            selected_indices.sort()
+
+            # Use a class with properties like removed_check, justification, etc.
+            # Complexity O(n)
+            loosening: list = []
+            for num in selected_indices:
+                print(f"Removing check {num}")
+                loosening.append(sca_yml.get("checks").__getsingleitem__(num))
+
+            # Remove from original
+            # Complexity O(m*n) or O(n^2)
+            for to_remove in loosening:
+                check_id = to_remove.get("id")
+                for index, fi in enumerate(sca_yml.get("checks")):
+                    if fi.get('id') == check_id:
+                        sca_yml.get("checks").pop(index)
+
+            with open(file=".tmp.loosening.yml", mode='w') as l:
+                yaml.dump(loosening, l)
+
+            with open(file=".tmp.new.yml", mode='w') as n:
+                yaml.dump(sca_yml, n)
+
     debug("Exiting")
 
 
