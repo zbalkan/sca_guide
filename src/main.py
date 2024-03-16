@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import argparse
-import json
 import logging
 import os
 import sys
@@ -45,29 +44,22 @@ def main() -> None:
 
     with open(baseline, mode='r', encoding=ENCODING) as f:
         yml = safe_load(f)
+        if yml:
+            d = dict(yml)
+            sca = classes.SCA.from_dict(d)
 
-        d = dict(yml)
-        j = json.dumps(d, sort_keys=True, indent=4)
+            p = sca.policy
+            print(p.name)
+            print(p.description)
 
-        # with open('.tmp.json', mode='w+') as jf:
-        #     jf.write(j)
-
-    # Example Usage
-    jsonstring = json.loads(j)
-    sca = classes.SCA.from_dict(jsonstring)
-
-    p = sca.policy
-    print(p.name)
-    print(p.description)
-
-    cc = len(sca.checks)
-    for i, c in enumerate(sca.checks):
-        print(
-            f"CHECK #{c.id}({i+1} of {cc}):")
-        print(
-            f"TITLE: {c.title}\n")
-        print(
-            f"DESC.: {c.description}\n")
+            cc = len(sca.checks)
+            for i, c in enumerate(sca.checks):
+                print(
+                    f"CHECK #{c.id}({i+1} of {cc}):")
+                print(
+                    f"TITLE: {c.title}\n")
+                print(
+                    f"DESC.: {c.description}\n")
     debug("Exiting")
 
 
