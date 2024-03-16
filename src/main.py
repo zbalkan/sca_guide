@@ -7,7 +7,7 @@ import os
 import sys
 from typing import Final
 
-from yaml import safe_load
+from ruamel.yaml import YAML
 
 import classes
 
@@ -40,10 +40,9 @@ def main() -> None:
     if (os.path.exists(baseline) is False):
         raise Exception(f"Baseline file not found at path: {baseline}")
 
-    debug(baseline)
-
     with open(baseline, mode='r', encoding=ENCODING) as f:
-        yml = safe_load(f)
+        yaml = YAML(typ='safe')
+        yml = yaml.load(f)
         if yml:
             d = dict(yml)
             sca = classes.SCA.from_dict(d)
