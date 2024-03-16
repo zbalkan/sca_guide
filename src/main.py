@@ -57,9 +57,14 @@ def main() -> None:
                 print(
                     f"CHECK #{c.id}({i+1} of {cc}):")
                 print(
-                    f"TITLE: {c.title}\n")
+                    f"TITLE:\t\t{c.title}")
                 print(
-                    f"DESC.: {c.description}\n")
+                    f"DESCRIPTION:\t{c.description}")
+                if c.rationale:
+                    print(f"RATIONALE:\t{c.rationale}")
+                if c.remediation:
+                    print(f"REMEDIATION:\t{c.remediation}")
+                print()
     debug("Exiting")
 
 
