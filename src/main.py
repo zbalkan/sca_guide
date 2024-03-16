@@ -9,7 +9,7 @@ from typing import Final
 
 from ruamel.yaml import YAML
 
-import classes
+from sca import SCA
 
 APP_NAME: Final[str] = 'scaGuide'
 APP_VERSION: Final[str] = '0.1'
@@ -44,25 +44,25 @@ def main() -> None:
         yaml = YAML(typ='safe')
         yml = yaml.load(f)
         if yml:
-            d = dict(yml)
-            sca = classes.SCA.from_dict(d)
+            s = SCA.from_dict(yml)
 
-            p = sca.policy
-            print(p.name)
-            print(p.description)
+            print("SCA POLICY:")
+            print(f"POLICY NAME:\t\t{s.policy.name}")
+            print(f"POLICY DESCRIPTION:\t{s.policy.description}")
+            print()
 
-            cc = len(sca.checks)
-            for i, c in enumerate(sca.checks):
+            check_count = len(s.checks)
+            for i, check in enumerate(s.checks):
                 print(
-                    f"CHECK #{c.id}({i+1} of {cc}):")
+                    f"CHECK ID:\t#{check.id} ({i+1} of {check_count}):")
                 print(
-                    f"TITLE:\t\t{c.title}")
+                    f"TITLE:\t\t{check.title}")
                 print(
-                    f"DESCRIPTION:\t{c.description}")
-                if c.rationale:
-                    print(f"RATIONALE:\t{c.rationale}")
-                if c.remediation:
-                    print(f"REMEDIATION:\t{c.remediation}")
+                    f"DESCRIPTION:\t{check.description}")
+                if check.rationale:
+                    print(f"RATIONALE:\t{check.rationale}")
+                if check.remediation:
+                    print(f"REMEDIATION:\t{check.remediation}")
                 print()
     debug("Exiting")
 
