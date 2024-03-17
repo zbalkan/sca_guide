@@ -32,51 +32,51 @@ class Compliance:
         _cis_csc_v8 = None
         __cis_csc_v8 = obj.get("cis_csc_v8")
         if __cis_csc_v8:
-            _cis_csc_v8 = [y for y in __cis_csc_v8]
+            _cis_csc_v8 = list(__cis_csc_v8)
         _cis_csc_v7 = None
         __cis_csc_v7 = obj.get("cis_csc_v7")
         if __cis_csc_v7:
-            _cis_csc_v7 = [y for y in __cis_csc_v7]
+            _cis_csc_v7 = list(__cis_csc_v7)
         _nist_sp_800_53 = None
         __nist_sp_800_53 = obj.get("nist_sp_800-53")
         if __nist_sp_800_53:
-            _nist_sp_800_53 = [y for y in __nist_sp_800_53]
+            _nist_sp_800_53 = list(__nist_sp_800_53)
         _iso_27001_2013 = None
         __iso_27001_2013 = obj.get("iso_27001-2013")
         if __iso_27001_2013:
-            _iso_27001_2013 = [y for y in __iso_27001_2013]
+            _iso_27001_2013 = list(__iso_27001_2013)
         _cmmc_v2_0 = None
         __cmmc_v2_0 = obj.get("cmmc_v2_0")
         if __cmmc_v2_0:
-            _cmmc_v2_0 = [y for y in __cmmc_v2_0]
+            _cmmc_v2_0 = list(__cmmc_v2_0)
         _pci_dss_v3_2_1 = None
         __pci_dss_v3_2_1 = obj.get("pci_dss_v3_2_1")
         if __pci_dss_v3_2_1:
-            _pci_dss_v3_2_1 = [y for y in __pci_dss_v3_2_1]
+            _pci_dss_v3_2_1 = list(__pci_dss_v3_2_1)
         _pci_dss_v4_0 = None
         __pci_dss_v4_0 = obj.get("pci_dss_v4_0")
         if __pci_dss_v4_0:
-            _pci_dss_v4_0 = [y for y in __pci_dss_v4_0]
+            _pci_dss_v4_0 = list(__pci_dss_v4_0)
         _soc_2 = None
         __soc_2 = obj.get("soc_2")
         if __soc_2:
-            _soc_2 = [y for y in __soc_2]
+            _soc_2 = list(__soc_2)
         _mitre_techniques = None
         __mitre_techniques = obj.get("mitre_techniques")
         if __mitre_techniques:
-            _mitre_techniques = [y for y in __mitre_techniques]
+            _mitre_techniques = list(__mitre_techniques)
         _mitre_tactics = None
         __mitre_tactics = obj.get("mitre_tactics")
         if __mitre_tactics:
-            _mitre_tactics = [y for y in __mitre_tactics]
+            _mitre_tactics = list(__mitre_tactics)
         _mitre_mitigations = None
         __mitre_mitigations = obj.get("mitre_mitigations")
         if __mitre_mitigations:
-            _mitre_mitigations = [y for y in __mitre_mitigations]
+            _mitre_mitigations = list(__mitre_mitigations)
         _hipaa = None
         __hipaa = obj.get("hipaa")
         if __hipaa:
-            _hipaa = [y for y in __hipaa]
+            _hipaa = list(__hipaa)
         return Compliance(_cis, _cis_csc_v8, _cis_csc_v7, _nist_sp_800_53, _iso_27001_2013, _cmmc_v2_0, _pci_dss_v3_2_1, _pci_dss_v4_0, _soc_2, _mitre_techniques, _mitre_tactics, _mitre_mitigations, _hipaa)
 
 
@@ -114,7 +114,7 @@ class Check:
         _references = None
         __references = obj.get("references")
         if __references:
-            _references = [y for y in __references]
+            _references = list(__references)
         _remediation = None
         __remediation = obj.get("remediation")
         if __remediation:
@@ -122,7 +122,7 @@ class Check:
         _rules = None
         __rules = obj.get("rules")
         if __rules:
-            _rules = [y for y in __rules]
+            _rules = list(__rules)
         _title = str(obj.get("title"))
         _regex_type = None
         __regex_type = obj.get("regex_type")
@@ -149,7 +149,7 @@ class Policy:
         _references = None
         __references = obj.get("references")
         if __references:
-            _references = [y for y in __references]
+            _references = list(__references)
         _regex_type = None
         __regex_type = obj.get("regex_type")
         if __regex_type:
@@ -171,7 +171,7 @@ class Requirements:
         _rules = None
         __rules = obj.get("rules")
         if __rules:
-            _rules = [y for y in __rules]
+            _rules = list(__rules)
         _title = str(obj.get("title"))
         return Requirements(_condition, _description, _rules, _title)
 
