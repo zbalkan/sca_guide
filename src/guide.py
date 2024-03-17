@@ -1,58 +1,54 @@
+import os
 from typing import Final
 
 from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 from loosening import Decision, Loosening
+from sca import Check, Compliance
 
 ENCODING: Final[str] = 'UTF-8'
 
 
 class Guide:
-    yaml: YAML
-    sca_yml: CommentedMap
-    loosening: Loosening
+    __yaml__: YAML
+    __sca_yml__: CommentedMap
+    __loosening__: Loosening
 
     def __init__(self, baseline_path: str) -> None:
-        self.yaml = YAML()
-        self.yaml.register_class(Loosening)
-        self.yaml.register_class(Decision)
+        self.__yaml__ = YAML()
+        self.__yaml__.register_class(Loosening)
+        self.__yaml__.register_class(Decision)
+        self.__yaml__.register_class(Check)
+        self.__yaml__.register_class(Compliance)
 
-        with open(baseline_path, mode='r', encoding=ENCODING) as f:
-            self.sca_yml = CommentedMap(self.yaml.load(f))
+        with open(baseline_path, mode='r', encoding=ENCODING) as fs:
+            self.__sca_yml__ = CommentedMap(self.__yaml__.load(fs))
 
-    def export_custom(self) -> None:
-        with open(file=".tmp.new.yml", mode='w') as n:
-            self.yaml.dump(self.sca_yml, n)
+    def import_loosening(self, loosening: Loosening) -> None:
+        self.__loosening__ = loosening
 
-    def export_loosening(self) -> None:
-        with open(file=".tmp.loosening.yml", mode='w') as l:
-            self.yaml.dump(self.loosening, l)
+    def export_custom(self, custom_path: str) -> None:
+        custom = CommentedMap(self.__sca_yml__.copy())
+        custom.get("policy")[
+            "name"] = self.__loosening__.name + " Loosening Guide"
+        custom.get("policy")["id"] = self.__loosening__.id + "_loosening"
+        custom.get("policy")[
+            "description"] = self.__loosening__.description
+        custom.get("policy")["file"] = os.path.basename(custom_path)
 
-    def generate_custom(self) -> None:
-        self.sca_yml.get("policy")["name"] = self.loosening.name
-        self.sca_yml.get("policy")["id"] = self.loosening.id
-        self.sca_yml.get("policy")["description"] = self.loosening.description
-
-        for _, id in enumerate(self.loosening.get_ids()):
-            ccs: CommentedSeq = self.sca_yml.get("checks")
+        for _, id in enumerate(self.__loosening__.get_ids()):
+            ccs: CommentedSeq = custom.get("checks")
 
             for index, fi in enumerate(ccs):
                 if fi.get('id') == id:
                     print(f"Removing check {id} from baseline")
 
-                    self.sca_yml.get("checks").pop(index)
+                    custom.get("checks").pop(index)
 
-    def populate_loosening(self, selected_indices: list[int]) -> None:
-        id: str = "updated_" + self.sca_yml.get("policy").get("id")
-        name: str = "Custom policy"
-        desc: str = "Based on " + self.sca_yml.get("policy").get("name")
-        self.loosening = Loosening(
-            id=id, name=name, description=desc, decisions={})
-        for num in selected_indices:
-            print(f"Adding check {num} to loosening list")
-            checks: CommentedSeq = CommentedSeq(self.sca_yml.get("checks"))
-            selected_check: CommentedMap = checks.__getsingleitem__(num)
-            decision = Decision(justification="We don't want to.",
-                                suppressed_check=selected_check)
-            self.loosening.decisions[selected_check["id"]] = decision
+        with open(file=custom_path, mode='w') as fs:
+            self.__yaml__.dump(self.__sca_yml__, fs)
+
+    def export_loosening(self, loosening_path: str) -> None:
+        with open(file=loosening_path, mode='w') as fs:
+            self.__yaml__.dump(self.__loosening__, fs)

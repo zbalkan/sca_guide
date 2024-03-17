@@ -4,12 +4,11 @@
 import argparse
 import logging
 import os
-import random
 import sys
 from typing import Final
 
-
 from guide import Guide
+from loosening import Decision, Loosening
 from sca import SCA
 
 APP_NAME: Final[str] = 'scaGuide'
@@ -22,13 +21,6 @@ def debug(msg: str) -> None:
     logging.debug(msg)
 
 
-def get_selected(check_count) -> list[int]:
-    selected_indices: list[int] = [x for x
-                                   in random.choices(range(0, check_count), k=10)]
-    selected_indices.sort()
-    return selected_indices
-
-
 def main() -> None:
     parser: argparse.ArgumentParser = argparse.ArgumentParser(
         description=f"{APP_NAME} ({APP_VERSION}) is a demo application.")
@@ -39,26 +31,52 @@ def main() -> None:
                         dest="baseline",
                         required=False,
                         help="Path to the Wazuh SCA file to start with")
+    parser.add_argument("--custom", "-c",
+                        dest="custom",
+                        required=False,
+                        help="Path to the custom Wazuh SCA file to save")
+    parser.add_argument("--loosening", "-l",
+                        dest="loosening",
+                        required=False,
+                        help="Path to the list of suppression decisions from the Wazuh SCA file")
+
     args: argparse.Namespace = parser.parse_args()
 
     baseline = str(args.baseline)
-
     baseline = os.path.abspath(baseline)
 
     if (os.path.exists(baseline) is False):
         raise Exception(f"Baseline file not found at path: {baseline}")
 
+    loosening: str = str(args.loosening)
+    loosening = os.path.abspath(loosening)
+
+    custom: str = str(args.custom)
+    custom = os.path.abspath(custom)
+
     guide = Guide(baseline_path=baseline)
 
-    sca: SCA = SCA.from_dict(guide.sca_yml)
+    sca: SCA = SCA.from_dict(guide.__sca_yml__)
+
+    # Here comes the UI part
+    os.system(command='cls')
 
     print("SCA POLICY:")
     print(f"POLICY NAME:\t\t{sca.policy.name}")
     print(f"POLICY DESCRIPTION:\t{sca.policy.description}")
     print()
 
+    name = input("Write the name you picked for custom baseline:\n")
+    id = name.lower().replace(' ', '_').replace(
+        '-', '_').replace('.', '_').replace('___', '_').replace('__', '_')
+    desc = input("Write a description for your custom baseline:\n")
+    desc = f"{desc} (Based on {sca.policy.name})"
+
+    l = Loosening(name=name, id=id, description=desc, decisions={})
+
     check_count: int = len(sca.checks)
     for i, check in enumerate(sca.checks):
+        os.system(command='cls')
         print(
             f"CHECK ID:\t#{check.id} ({i+1} of {check_count}):")
         print(
@@ -71,18 +89,26 @@ def main() -> None:
             print(f"REMEDIATION:\t{check.remediation}")
         print()
 
-    selected_indices: list[int] = get_selected(check_count=check_count)
+        response = input(
+            "Do you want to exclude this check as an exception? [y/N] ")
+        if (response == 'y' or response == 'Y'):
+            justification = input(
+                "Write your justification or type 'C' to cancel.\n")
+            if (justification == 'c' or justification == 'C'):
+                continue
+            else:
+                d = Decision(justification=justification,
+                             suppressed_check=check)
+                l.decisions[check.id] = d
 
-    # Complexity O(n)
-    guide.populate_loosening(selected_indices=selected_indices)
+    os.system('cls')
+    print("Completed the customization.")
 
-    # Remove from original
-    # Complexity O(m*n) or O(n^2)
-    guide.generate_custom()
+    guide.import_loosening(loosening=l)
 
-    guide.export_loosening()
+    guide.export_loosening(loosening_path=loosening)
 
-    guide.export_custom()
+    guide.export_custom(custom_path=custom)
 
     debug("Exiting")
 
