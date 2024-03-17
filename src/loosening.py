@@ -13,5 +13,13 @@ class Decision:
 
 @dataclass
 class Loosening:
-    title: str
+    name: str
+    id: str
+    description: str
     decisions: dict[int, Decision]
+
+    def get_ids(self) -> list[int]:
+        if self.decisions:
+            return [k for k, _ in self.decisions.items()]
+        else:
+            return []

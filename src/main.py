@@ -8,10 +8,8 @@ import random
 import sys
 from typing import Final
 
-from ruamel.yaml import YAML
-from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
-from loosening import Decision, Loosening
+from guide import Guide
 from sca import SCA
 
 APP_NAME: Final[str] = 'scaGuide'
@@ -22,6 +20,13 @@ ENCODING: Final[str] = 'UTF-8'
 def debug(msg: str) -> None:
     print(msg)
     logging.debug(msg)
+
+
+def get_selected(check_count) -> list[int]:
+    selected_indices: list[int] = [x for x
+                                   in random.choices(range(0, check_count), k=10)]
+    selected_indices.sort()
+    return selected_indices
 
 
 def main() -> None:
@@ -43,60 +48,41 @@ def main() -> None:
     if (os.path.exists(baseline) is False):
         raise Exception(f"Baseline file not found at path: {baseline}")
 
-    with open(baseline, mode='r', encoding=ENCODING) as f:
-        yaml = YAML()
-        sca_yml:CommentedMap = yaml.load(f)
+    guide = Guide(baseline_path=baseline)
 
-        if sca_yml:
-            s = SCA.from_dict(sca_yml)
+    sca: SCA = SCA.from_dict(guide.sca_yml)
 
-            print("SCA POLICY:")
-            print(f"POLICY NAME:\t\t{s.policy.name}")
-            print(f"POLICY DESCRIPTION:\t{s.policy.description}")
-            print()
+    print("SCA POLICY:")
+    print(f"POLICY NAME:\t\t{sca.policy.name}")
+    print(f"POLICY DESCRIPTION:\t{sca.policy.description}")
+    print()
 
-            check_count = len(s.checks)
-            for i, check in enumerate(s.checks):
-                print(
-                    f"CHECK ID:\t#{check.id} ({i+1} of {check_count}):")
-                print(
-                    f"TITLE:\t\t{check.title}")
-                print(
-                    f"DESCRIPTION:\t{check.description}")
-                if check.rationale:
-                    print(f"RATIONALE:\t{check.rationale}")
-                if check.remediation:
-                    print(f"REMEDIATION:\t{check.remediation}")
-                print()
+    check_count: int = len(sca.checks)
+    for i, check in enumerate(sca.checks):
+        print(
+            f"CHECK ID:\t#{check.id} ({i+1} of {check_count}):")
+        print(
+            f"TITLE:\t\t{check.title}")
+        print(
+            f"DESCRIPTION:\t{check.description}")
+        if check.rationale:
+            print(f"RATIONALE:\t{check.rationale}")
+        if check.remediation:
+            print(f"REMEDIATION:\t{check.remediation}")
+        print()
 
-            selected_indices: list[int] = [x for x
-                                           in random.choices(range(0, check_count), k=10)]
-            selected_indices.sort()
+    selected_indices: list[int] = get_selected(check_count=check_count)
 
-            # Complexity O(n)
-            ls = Loosening(title="Custom policy", decisions={})
-            for num in selected_indices:
-                print(f"Removing check {num}")
-                checks: CommentedSeq = sca_yml.get("checks")
-                c: CommentedMap = checks.__getsingleitem__(num)
-                dc = Decision(justification="We don't want to.",
-                              suppressed_check=c)
-                ls.decisions[c["id"]] = dc
+    # Complexity O(n)
+    guide.populate_loosening(selected_indices=selected_indices)
 
-            # Remove from original
-            # Complexity O(m*n) or O(n^2)
-            for i, id in enumerate(ls.decisions.keys()):
-                for index, fi in enumerate(sca_yml.get("checks")):
-                    if fi.get('id') == id:
-                        sca_yml.get("checks").pop(index)
+    # Remove from original
+    # Complexity O(m*n) or O(n^2)
+    guide.generate_custom()
 
-            with open(file=".tmp.loosening.yml", mode='w') as l:
-                yaml.register_class(Loosening)
-                yaml.register_class(Decision)
-                yaml.dump(ls, l)
+    guide.export_loosening()
 
-            with open(file=".tmp.new.yml", mode='w') as n:
-                yaml.dump(sca_yml, n)
+    guide.export_custom()
 
     debug("Exiting")
 
