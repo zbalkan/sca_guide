@@ -1,8 +1,6 @@
-
-
 from dataclasses import dataclass
 
-from sca import Check
+from internal.sca import Check
 
 
 @dataclass

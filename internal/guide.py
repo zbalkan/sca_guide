@@ -4,8 +4,8 @@ from typing import Final
 from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
-from loosening import Decision, Loosening
-from sca import Check, Compliance
+from internal.loosening import Decision, Loosening
+from internal.sca import Check, Compliance
 
 ENCODING: Final[str] = 'UTF-8'
 

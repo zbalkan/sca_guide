@@ -7,9 +7,9 @@ import os
 import sys
 from typing import Final
 
-from guide import Guide
-from loosening import Decision, Loosening
-from sca import SCA
+from internal.guide import Guide
+from internal.loosening import Decision, Loosening
+from internal.sca import SCA
 
 APP_NAME: Final[str] = 'scaGuide'
 APP_VERSION: Final[str] = '0.1'
