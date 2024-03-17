@@ -1,6 +1,6 @@
 # sca_guide
 
-This simple Python application is used as a helper for CIS guidelines used by Wazuh Security Configuration Assessment (SCA).
+A helper for Wazuh Security Configuration Assessment (SCA) to create a custom SCA based on loosening.
 
 ## How it works
 

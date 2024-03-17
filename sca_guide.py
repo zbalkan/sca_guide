@@ -11,7 +11,7 @@ from internal.guide import Guide
 from internal.loosening import Decision, Loosening
 from internal.sca import SCA
 
-APP_NAME: Final[str] = 'scaGuide'
+APP_NAME: Final[str] = 'sca_guide'
 APP_VERSION: Final[str] = '0.1'
 ENCODING: Final[str] = 'UTF-8'
 
@@ -23,7 +23,7 @@ def debug(msg: str) -> None:
 
 def main() -> None:
     parser: argparse.ArgumentParser = argparse.ArgumentParser(
-        description=f"{APP_NAME} ({APP_VERSION}) is a demo application.")
+        description=f"{APP_NAME} ({APP_VERSION}) is a helper for Wazuh Security Configuration Assessment (SCA) to create a custom SCA based on loosening.")
     if (len(sys.argv)) == 1:
         parser.print_help()
 
