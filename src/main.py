@@ -3,15 +3,15 @@
 
 import argparse
 import logging
-from operator import indexOf
 import os
 import random
 import sys
 from typing import Final
 
 from ruamel.yaml import YAML
-from ruamel.yaml.comments import CommentedSeq
+from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
+from loosening import Decision, Loosening
 from sca import SCA
 
 APP_NAME: Final[str] = 'scaGuide'
@@ -45,7 +45,7 @@ def main() -> None:
 
     with open(baseline, mode='r', encoding=ENCODING) as f:
         yaml = YAML()
-        sca_yml = yaml.load(f)
+        sca_yml:CommentedMap = yaml.load(f)
 
         if sca_yml:
             s = SCA.from_dict(sca_yml)
@@ -73,23 +73,27 @@ def main() -> None:
                                            in random.choices(range(0, check_count), k=10)]
             selected_indices.sort()
 
-            # Use a class with properties like removed_check, justification, etc.
             # Complexity O(n)
-            loosening: list = []
+            ls = Loosening(title="Custom policy", decisions={})
             for num in selected_indices:
                 print(f"Removing check {num}")
-                loosening.append(sca_yml.get("checks").__getsingleitem__(num))
+                checks: CommentedSeq = sca_yml.get("checks")
+                c: CommentedMap = checks.__getsingleitem__(num)
+                dc = Decision(justification="We don't want to.",
+                              suppressed_check=c)
+                ls.decisions[c["id"]] = dc
 
             # Remove from original
             # Complexity O(m*n) or O(n^2)
-            for to_remove in loosening:
-                check_id = to_remove.get("id")
+            for i, id in enumerate(ls.decisions.keys()):
                 for index, fi in enumerate(sca_yml.get("checks")):
-                    if fi.get('id') == check_id:
+                    if fi.get('id') == id:
                         sca_yml.get("checks").pop(index)
 
             with open(file=".tmp.loosening.yml", mode='w') as l:
-                yaml.dump(loosening, l)
+                yaml.register_class(Loosening)
+                yaml.register_class(Decision)
+                yaml.dump(ls, l)
 
             with open(file=".tmp.new.yml", mode='w') as n:
                 yaml.dump(sca_yml, n)
