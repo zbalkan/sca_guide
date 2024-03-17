@@ -92,14 +92,16 @@ def main() -> None:
         response = input(
             "Do you want to exclude this check as an exception? [y/N] ")
         if (response == 'y' or response == 'Y'):
-            justification = input(
-                "Write your justification or type 'C' to cancel.\n")
-            if (justification == 'c' or justification == 'C'):
-                continue
-            else:
-                d = Decision(justification=justification,
-                             suppressed_check=check)
-                l.decisions[check.id] = d
+            justification: str = ''
+            while (justification == ''):
+                justification = input(
+                    "Write your justification or type 'C' to cancel.\n")
+                if (justification == 'c' or justification == 'C'):
+                    continue
+                else:
+                    d = Decision(justification=justification,
+                                 suppressed_check=check)
+                    l.decisions[check.id] = d
 
     os.system('cls')
     print("Completed the customization.")
