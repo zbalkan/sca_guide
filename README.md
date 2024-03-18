@@ -23,6 +23,12 @@ options:
                         Path to the list of suppression decisions (markdown) from the Wazuh SCA file
 ```
 
+Sample usage:
+
+```bash
+python sca_guide.py -b data\windows\cis_win2022.yml -c custom_win2022.yml -l loosening_win2022.yml
+```
+
 ## Installation
 
 Use either `pip install -r requirements.txt` or `pip install -r requirements.dev.txt` if you want to develop the code.
