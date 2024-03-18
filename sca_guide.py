@@ -29,15 +29,15 @@ def main() -> None:
 
     parser.add_argument("--baseline", "-b",
                         dest="baseline",
-                        required=False,
+                        required=True,
                         help="Path to the Wazuh SCA file (yaml) to start with")
     parser.add_argument("--custom", "-c",
                         dest="custom",
-                        required=False,
+                        required=True,
                         help="Path to the custom Wazuh SCA (yaml) file to save")
     parser.add_argument("--loosening", "-l",
                         dest="loosening",
-                        required=False,
+                        required=True,
                         help="Path to the list of suppression decisions (markdown + yaml) from the Wazuh SCA file")
 
     args: argparse.Namespace = parser.parse_args()
