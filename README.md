@@ -16,11 +16,11 @@ scaGuide (0.1) is a demo application.
 options:
   -h, --help            show this help message and exit
   --baseline BASELINE, -b BASELINE
-                        Path to the Wazuh SCA file to start with
+                        Path to the Wazuh SCA (yaml) file to start with
   --custom CUSTOM, -c CUSTOM
-                        Path to the custom Wazuh SCA file to save
+                        Path to the custom Wazuh SCA (yaml) file to save
   --loosening LOOSENING, -l LOOSENING
-                        Path to the list of suppression decisions from the Wazuh SCA file
+                        Path to the list of suppression decisions (markdown) from the Wazuh SCA file
 ```
 
 ## Installation
