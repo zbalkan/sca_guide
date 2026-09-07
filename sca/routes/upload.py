@@ -13,11 +13,14 @@ from flask import Blueprint, Response, current_app, jsonify, redirect, render_te
 from ruamel.yaml import YAML
 from ruamel.yaml.error import YAMLError
 from werkzeug.datastructures import FileStorage
+from werkzeug.exceptions import HTTPException
 from werkzeug.utils import secure_filename
 from werkzeug.wrappers.response import Response as wResponse
 
+from sca.internal.guide import Guide
+from sca.internal.review import normalize_decisions
 from sca.services.sca_service import validate_sca_file
-from sca.services.session_service import SessionService, contained_path
+from sca.services.session_service import DRAFT_SCHEMA_VERSION, SessionService, contained_path
 
 upload_bp = Blueprint('upload', __name__)
 logger = logging.getLogger(__name__)
@@ -199,6 +202,8 @@ def upload_file() -> tuple[Response, Literal[400]] | Response | tuple[Response, 
             if os.path.exists(filepath):
                 os.remove(filepath)
             raise
+    except HTTPException:
+        raise
     except Exception:
         logger.exception("Unable to upload SCA file")
         return jsonify({'error': 'Unable to process SCA file.'}), 500
@@ -207,14 +212,39 @@ def upload_file() -> tuple[Response, Literal[400]] | Response | tuple[Response, 
 @upload_bp.route('/recover/<session_id>')
 def recover_draft(session_id: str) -> tuple[Response, Literal[404]] | tuple[Response, Literal[410]] | wResponse | tuple[Response, Literal[400]]:
     service = SessionService(current_app.config['DRAFT_FOLDER'])
-    data = service.load_draft(session_id)
-    if not data:
-        return jsonify({'error': 'Draft not found'}), 404
     try:
-        filename = str(data['baseline_filename'])
+        data = service.load_draft(session_id, strict=True)
+    except ValueError:
+        logger.warning("Invalid draft data for %s", session_id, exc_info=True)
+        return jsonify({'error': 'Draft is invalid'}), 400
+    if data is None:
+        return jsonify({'error': 'Draft not found'}), 404
+
+    try:
+        schema_version = data.get('schema_version', DRAFT_SCHEMA_VERSION)
+        if type(schema_version) is not int or schema_version != DRAFT_SCHEMA_VERSION:
+            raise ValueError("Unsupported draft schema version")
+
+        filename = data['baseline_filename']
+        if not isinstance(filename, str) or not filename:
+            raise ValueError("Invalid baseline filename")
         path = contained_path(current_app.config['UPLOAD_FOLDER'], filename)
         if not path.is_file():
             return jsonify({'error': 'Draft baseline is no longer available'}), 410
+
+        for field in ('custom_name', 'sanitized_name', 'custom_description'):
+            if not isinstance(data.get(field), str) or not data[field].strip():
+                raise ValueError(f"Invalid draft field: {field}")
+
+        guide = Guide(str(path))
+        baseline_ids = {check.id for check in guide.sca.checks}
+        normalized = normalize_decisions(
+            data.get('decisions', {}), baseline_ids, strict=True)
+        decisions = {
+            str(check_id): decision.to_session()
+            for check_id, decision in normalized.items()
+        }
+
         session.clear()
         session.update(
             session_id=session_id,
@@ -222,7 +252,7 @@ def recover_draft(session_id: str) -> tuple[Response, Literal[404]] | tuple[Resp
             custom_name=data['custom_name'],
             sanitized_name=data['sanitized_name'],
             custom_description=data['custom_description'],
-            decisions=data.get('decisions', {}),
+            decisions=decisions,
         )
         session.permanent = True
         return redirect(url_for('review.review_page'))

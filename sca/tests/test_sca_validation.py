@@ -81,17 +81,19 @@ def test_nested_variables_count_toward_structure_limit(tmp_path, monkeypatch):
     monkeypatch.setattr('sca.services.sca_service.MAX_STRUCTURE_ITEMS', 90)
 
     flat = baseline()
-    flat['variables'] = {str(index): index for index in range(10)}
+    flat['variables'] = {f'$var_{index}': index for index in range(10)}
     assert _validate(tmp_path, flat) == (True, None)
 
     nested = baseline()
-    nested['variables'] = {'nested': {str(index): {'value': index} for index in range(10)}}
+    nested['variables'] = {
+        '$nested': {f'$var_{index}': {'value': index} for index in range(10)}
+    }
     assert _validate(tmp_path, nested) == (False, 'SCA file is too structurally complex')
 
 
 def test_unsupported_yaml_collection_is_rejected(tmp_path):
     data = baseline()
-    data['variables'] = {'unsupported': {'one', 'two'}}
+    data['variables'] = {'$unsupported': {'one', 'two'}}
     assert _validate(tmp_path, data) == (False, 'Unsupported YAML collection type')
 
 

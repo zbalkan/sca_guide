@@ -10,6 +10,7 @@ from typing import Any
 
 logger: logging.Logger = logging.getLogger(__name__)
 SESSION_ID: re.Pattern[str] = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", re.I)
+DRAFT_SCHEMA_VERSION = 1
 
 
 def contained_path(root: str, name: str) -> Path:
@@ -62,16 +63,21 @@ class SessionService:
                     logger.warning("Unable to remove temporary draft %s", temp_name,
                                    exc_info=True)
 
-    def load_draft(self, session_id: str) -> dict[str, Any] | None:
+    def load_draft(self, session_id: str, *, strict: bool = False
+                   ) -> dict[str, Any] | None:
         try:
             path: Path = self._get_draft_path(session_id)
             if not path.is_file():
                 return None
             with path.open(encoding='utf-8') as stream:
                 data = json.load(stream)
-            return data if isinstance(data, dict) else None
-        except Exception:
+            if not isinstance(data, dict):
+                raise ValueError("Draft root must be an object")
+            return data
+        except Exception as error:
             logger.exception("Unable to load draft %s", session_id)
+            if strict:
+                raise ValueError("Invalid draft data") from error
             return None
 
     def delete_draft(self, session_id: str) -> bool:
@@ -102,20 +108,57 @@ class SessionService:
     def serialize_session_data(baseline_filename: str, custom_name: str,
                                sanitized_name: str, custom_description: str,
                                decisions: dict[str, Any]) -> dict[str, Any]:
-        return {'baseline_filename': baseline_filename, 'custom_name': custom_name,
+        return {'schema_version': DRAFT_SCHEMA_VERSION,
+                'baseline_filename': baseline_filename, 'custom_name': custom_name,
                 'sanitized_name': sanitized_name,
                 'custom_description': custom_description, 'decisions': decisions}
 
+    def cleanup_review_files(self, upload_folder: str, ttl_hours: int) -> set[Path]:
+        """Expire draft/baseline pairs and return baselines owned by active drafts."""
+        cutoff = time.time() - max(ttl_hours, 1) * 3600
+        protected: set[Path] = set()
+
+        for draft_path in Path(self.draft_folder).glob('*.json'):
+            session_id = draft_path.stem
+            if draft_path.is_symlink() or not SESSION_ID.fullmatch(session_id):
+                continue
+            try:
+                data = self.load_draft(session_id)
+                baseline_path: Path | None = None
+                if data and isinstance(data.get('baseline_filename'), str):
+                    try:
+                        baseline_path = contained_path(
+                            upload_folder, data['baseline_filename'])
+                    except ValueError:
+                        logger.warning("Invalid baseline path in draft %s", session_id)
+
+                if draft_path.stat().st_mtime >= cutoff:
+                    if baseline_path is not None:
+                        protected.add(baseline_path)
+                    continue
+
+                draft_path.unlink(missing_ok=True)
+                if baseline_path is not None:
+                    baseline_path.unlink(missing_ok=True)
+            except Exception:
+                logger.warning("Unable to clean review draft %s", draft_path,
+                               exc_info=True)
+
+        return protected
+
     @staticmethod
-    def cleanup_expired(roots: list[str], ttl_hours: int) -> None:
+    def cleanup_expired(roots: list[str], ttl_hours: int,
+                        protected_paths: set[Path] | None = None) -> None:
         cutoff: float = time.time() - max(ttl_hours, 1) * 3600
+        protected = {path.resolve() for path in (protected_paths or set())}
         for root_name in roots:
             root: Path = Path(root_name).resolve()
             if not root.is_dir():
                 continue
             for path in root.iterdir():
                 try:
-                    if path.is_symlink() or path.stat().st_mtime >= cutoff:
+                    if (path.is_symlink() or path.resolve() in protected
+                            or path.stat().st_mtime >= cutoff):
                         continue
                     if path.is_file():
                         path.unlink()

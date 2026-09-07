@@ -4,6 +4,7 @@ from collections.abc import Collection
 from typing import Any
 
 from ruamel.yaml import YAML
+from ruamel.yaml.error import YAMLError
 
 from sca.internal.guide import Guide
 from sca.internal.review import DecisionType, normalize_decisions
@@ -89,6 +90,8 @@ def validate_sca_file(filepath: str) -> tuple[bool, str | None]:
             for field in ('title', 'description', 'condition'):
                 if field not in requirements or not isinstance(requirements[field], str) or not requirements[field].strip():
                     return False, f"Missing required field in requirements: {field}"
+            if requirements['condition'] not in {'all', 'any', 'none'}:
+                return False, "requirements.condition must be 'all', 'any', or 'none'"
             rules = requirements.get('rules')
             if not isinstance(rules, list) or not rules or not all(
                     isinstance(value, str) and value.strip() for value in rules):
@@ -146,12 +149,20 @@ def validate_sca_file(filepath: str) -> tuple[bool, str | None]:
                         return False, (f"Check {check_id}: compliance[{comp_index}].{key} "
                                        "must be an array of scalar identifiers")
 
-        if 'variables' in data and not isinstance(data['variables'], dict):
-            return False, "Optional field 'variables' must be a mapping"
+        if 'variables' in data:
+            variables = data['variables']
+            if not isinstance(variables, dict):
+                return False, "Optional field 'variables' must be a mapping"
+            for key, value in variables.items():
+                if not isinstance(key, str) or not key.startswith('$'):
+                    return False, "variables keys must start with '$'"
+                if isinstance(value, Collection) and not isinstance(
+                        value, (str, bytes, bytearray)):
+                    return False, 'variables values must be scalar or null'
 
         SCA.from_dict(data)
         return True, None
-    except Exception:
+    except (OSError, UnicodeError, YAMLError, RecursionError):
         return False, "Unable to parse the YAML file"
 
 

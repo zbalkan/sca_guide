@@ -34,7 +34,12 @@ def create_app(config_class=Config) -> Flask:
     for folder in folders:
         os.makedirs(folder, exist_ok=True)
     Session(app)
-    SessionService.cleanup_expired(folders, app.config['FILE_TTL_HOURS'])
+
+    draft_service = SessionService(app.config['DRAFT_FOLDER'])
+    protected_baselines = draft_service.cleanup_review_files(
+        app.config['UPLOAD_FOLDER'], app.config['FILE_TTL_HOURS'])
+    SessionService.cleanup_expired(
+        folders, app.config['FILE_TTL_HOURS'], protected_baselines)
 
     app.register_blueprint(upload_bp)
     app.register_blueprint(review_bp)
@@ -50,7 +55,8 @@ def create_app(config_class=Config) -> Flask:
 
     @app.errorhandler(413)
     def request_entity_too_large(error) -> tuple[dict[str, str], Literal[413]]:
-        return {'error': 'File too large. Maximum size is 16MB.'}, 413
+        limit = app.config['MAX_CONTENT_LENGTH']
+        return {'error': f'File too large. Maximum size is {limit} bytes.'}, 413
 
     return app
 
