@@ -80,6 +80,29 @@ def test_decision_api_persists_not_applicable(tmp_path):
         assert sess['decisions']['1'] == response.json['decision']
 
 
+def test_not_applicable_survives_draft_recovery(tmp_path):
+    client = app_with_session(tmp_path)
+    with client.session_transaction() as sess:
+        session_id = sess['session_id']
+
+    response = client.post('/api/decision', json={
+        'check_id': 1,
+        'decision': 'not_applicable',
+        'justification': 'This control does not apply to this server role.',
+    })
+    assert response.status_code == 200
+
+    with client.session_transaction() as sess:
+        sess.clear()
+
+    assert client.get(f'/recover/{session_id}').status_code == 302
+    with client.session_transaction() as sess:
+        assert sess['decisions']['1'] == {
+            'decision': 'not_applicable',
+            'justification': 'This control does not apply to this server role.',
+        }
+
+
 def test_mixed_removals_cannot_remove_every_check(tmp_path):
     client = app_with_session(tmp_path)
     with client.session_transaction() as sess:
