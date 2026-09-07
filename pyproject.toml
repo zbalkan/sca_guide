@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wazuhscatune"
-version = "0.2.0"
+version = "0.2.1"
 description = "Tailor Wazuh SCA baselines with documented review decisions"
 readme = "README.md"
 requires-python = ">=3.11"

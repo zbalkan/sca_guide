@@ -236,6 +236,11 @@ def recover_draft(session_id: str) -> tuple[Response, Literal[404]] | tuple[Resp
             if not isinstance(data.get(field), str) or not data[field].strip():
                 raise ValueError(f"Invalid draft field: {field}")
 
+        record_generated_at = data.get('record_generated_at')
+        if record_generated_at is not None:
+            if not isinstance(record_generated_at, str) or not record_generated_at.strip():
+                raise ValueError("Invalid record generation timestamp")
+
         guide = Guide(str(path))
         baseline_ids = {check.id for check in guide.sca.checks}
         normalized = normalize_decisions(
@@ -245,15 +250,19 @@ def recover_draft(session_id: str) -> tuple[Response, Literal[404]] | tuple[Resp
             for check_id, decision in normalized.items()
         }
 
+        recovered = {
+            'session_id': session_id,
+            'baseline_filename': filename,
+            'custom_name': data['custom_name'],
+            'sanitized_name': data['sanitized_name'],
+            'custom_description': data['custom_description'],
+            'decisions': decisions,
+        }
+        if record_generated_at is not None:
+            recovered['record_generated_at'] = record_generated_at
+
         session.clear()
-        session.update(
-            session_id=session_id,
-            baseline_filename=filename,
-            custom_name=data['custom_name'],
-            sanitized_name=data['sanitized_name'],
-            custom_description=data['custom_description'],
-            decisions=decisions,
-        )
+        session.update(recovered)
         session.permanent = True
         return redirect(url_for('review.review_page'))
     except (KeyError, TypeError, ValueError):

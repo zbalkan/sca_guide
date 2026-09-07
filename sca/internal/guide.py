@@ -2,7 +2,6 @@ import hashlib
 import html
 import os
 from copy import deepcopy
-from datetime import datetime, timezone
 
 from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedMap
@@ -63,7 +62,7 @@ class Guide:
             self.__yaml__.dump(custom, stream)
 
     def export_exceptions(self, tailoring: Tailoring, tailored_path: str,
-                          yml_path: str, md_path: str) -> None:
+                          yml_path: str, md_path: str, generated_at: str) -> None:
         sca = self.sca
         baseline_digest = _sha256(self.baseline_path)
         tailored_digest = _sha256(tailored_path)
@@ -97,7 +96,7 @@ class Guide:
                 'sha256': tailored_digest,
             },
             'generated_by': {'tool': 'wazuhscatune', 'version': VERSION},
-            'generated_at': datetime.now(timezone.utc).isoformat(),
+            'generated_at': generated_at,
             'exceptions': {
                 'accepted_risk': record_items(DecisionType.EXCEPTION),
                 'not_applicable': record_items(DecisionType.NOT_APPLICABLE),

@@ -19,13 +19,14 @@ def _baseline_path() -> str:
     return str(contained_path(current_app.config['UPLOAD_FOLDER'], session['baseline_filename']))
 
 
-def _save_draft(decisions: dict[str, Any]) -> bool:
+def _save_draft(decisions: dict[str, Any], record_generated_at: str | None = None) -> bool:
     data = SessionService.serialize_session_data(
         session['baseline_filename'],
         session['custom_name'],
         session['sanitized_name'],
         session['custom_description'],
         decisions,
+        record_generated_at,
     )
     return SessionService(current_app.config['DRAFT_FOLDER']).save_draft(
         session['session_id'], data)
@@ -88,16 +89,30 @@ def save_decision() -> tuple[Response, Literal[400]] | tuple[Response, Literal[4
             return jsonify({'error': str(error)}), 400
 
         decisions = dict(session.get('decisions', {}))
-        decisions[str(check_id)] = decision.to_session()
-        if not _save_draft(decisions):
+        key = str(check_id)
+        serialized = decision.to_session()
+        changed = decisions.get(key) != serialized
+        decisions[key] = serialized
+
+        record_generated_at = session.get('record_generated_at')
+        if not isinstance(record_generated_at, str) or not record_generated_at:
+            record_generated_at = None
+        if changed:
+            record_generated_at = None
+
+        if not _save_draft(decisions, record_generated_at):
             return jsonify({'error': 'Unable to persist review state.'}), 500
 
         session['decisions'] = decisions
+        if changed:
+            session.pop('record_generated_at', None)
+        elif record_generated_at is not None:
+            session['record_generated_at'] = record_generated_at
         session.modified = True
         return jsonify({
             'success': True,
-            'check_id': str(check_id),
-            'decision': decisions[str(check_id)],
+            'check_id': key,
+            'decision': decisions[key],
             'stats': calculate_stats(guide, decisions),
         })
     except Exception:

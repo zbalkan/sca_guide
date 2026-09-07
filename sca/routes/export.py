@@ -1,6 +1,7 @@
 """Export routes."""
 import logging
 import os
+from datetime import datetime, timezone
 from typing import Literal
 
 from flask import Blueprint, current_app, jsonify, redirect, render_template, send_file, session, url_for
@@ -116,6 +117,18 @@ def export_files() -> tuple[Response, Literal[400]] | Response | tuple[Response,
                     check=check,
                 )
 
+        record_generated_at = session.get('record_generated_at')
+        if not isinstance(record_generated_at, str) or not record_generated_at:
+            record_generated_at = datetime.now(timezone.utc).isoformat()
+
+        draft_data = SessionService.serialize_session_data(
+            session['baseline_filename'], custom_name, sanitized_name,
+            custom_description, decisions, record_generated_at)
+        if not SessionService(current_app.config['DRAFT_FOLDER']).save_draft(
+                session['session_id'], draft_data):
+            return jsonify({'error': 'Unable to persist review state.'}), 500
+        session['record_generated_at'] = record_generated_at
+
         previous_path = None
         previous = session.get('export_zip_path')
         if isinstance(previous, str):
@@ -126,7 +139,8 @@ def export_files() -> tuple[Response, Literal[400]] | Response | tuple[Response,
                 pass
 
         zip_path = export_policy(
-            guide, tailoring, sanitized_name, current_app.config['EXPORT_FOLDER'])
+            guide, tailoring, sanitized_name, current_app.config['EXPORT_FOLDER'],
+            record_generated_at)
         session['export_zip_path'] = zip_path
         session['export_zip_filename'] = f'{sanitized_name}_export.zip'
         session.modified = True

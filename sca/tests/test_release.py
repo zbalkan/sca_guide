@@ -8,6 +8,7 @@ from sca.internal.loosening import Tailoring, TailoringRemoval
 from sca.internal.review import DecisionType, ReviewDecision
 from sca.services.export_service import export_policy
 from sca.services.sca_service import calculate_stats
+from sca.services.session_service import SessionService
 from sca.tests.helpers import app_with_session, baseline, write_yaml
 
 
@@ -22,6 +23,14 @@ def _three_check_baseline():
         'compliance': [{'pci_dss_v4.0': ['2.2.1']}],
     })
     return data
+
+
+def _exported_record_bytes(client) -> bytes:
+    with client.session_transaction() as sess:
+        archive_path = sess['export_zip_path']
+        filename = f"{sess['sanitized_name']}_exceptions.yml"
+    with zipfile.ZipFile(archive_path) as bundle:
+        return bundle.read(filename)
 
 
 def test_not_applicable_requires_a_meaningful_justification():
@@ -103,6 +112,63 @@ def test_not_applicable_survives_draft_recovery(tmp_path):
         }
 
 
+def test_unchanged_review_reuses_record_timestamp_across_exports_and_recovery(tmp_path):
+    client = app_with_session(tmp_path)
+    with client.session_transaction() as sess:
+        session_id = sess['session_id']
+
+    assert client.post('/api/decision', json={
+        'check_id': 1,
+        'decision': 'exception',
+        'justification': 'Risk is accepted for this legacy host.',
+    }).status_code == 200
+    assert client.post('/api/decision', json={
+        'check_id': 2,
+        'decision': 'accepted',
+    }).status_code == 200
+
+    assert client.post('/api/export').status_code == 200
+    first_record = _exported_record_bytes(client)
+    with client.session_transaction() as sess:
+        generated_at = sess.get('record_generated_at')
+    assert isinstance(generated_at, str) and generated_at
+
+    service = SessionService(str(tmp_path / 'drafts'))
+    draft = service.load_draft(session_id, strict=True)
+    assert draft is not None
+    assert draft['record_generated_at'] == generated_at
+
+    assert client.post('/api/export').status_code == 200
+    assert _exported_record_bytes(client) == first_record
+
+    with client.session_transaction() as sess:
+        sess.clear()
+    assert client.get(f'/recover/{session_id}').status_code == 302
+    with client.session_transaction() as sess:
+        assert sess['record_generated_at'] == generated_at
+
+    assert client.post('/api/export').status_code == 200
+    assert _exported_record_bytes(client) == first_record
+
+    assert client.post('/api/decision', json={
+        'check_id': 2,
+        'decision': 'accepted',
+    }).status_code == 200
+    with client.session_transaction() as sess:
+        assert sess['record_generated_at'] == generated_at
+
+    assert client.post('/api/decision', json={
+        'check_id': 1,
+        'decision': 'not_applicable',
+        'justification': 'This control does not apply to this server role.',
+    }).status_code == 200
+    with client.session_transaction() as sess:
+        assert 'record_generated_at' not in sess
+    draft = service.load_draft(session_id, strict=True)
+    assert draft is not None
+    assert 'record_generated_at' not in draft
+
+
 def test_mixed_removals_cannot_remove_every_check(tmp_path):
     client = app_with_session(tmp_path)
     with client.session_transaction() as sess:
@@ -147,6 +213,7 @@ def test_export_splits_removed_checks_and_preserves_compliance(tmp_path):
         markdown = bundle.read('tailored_exceptions.md').decode('utf-8')
 
     assert [check['id'] for check in tailored['checks']] == [3]
+    assert 'schema' not in record
     assert record['exceptions']['accepted_risk'] == [{
         'check_id': 1,
         'title': 'One | first',

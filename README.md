@@ -9,7 +9,7 @@ Review states:
 - **Exception** — removed with a justification because the check applies but the deviation is intentionally accepted, for example because risk is accepted or an alternative control is used.
 - **Not Applicable** — removed with a justification because the check does not apply to the target system or role.
 
-![Review Wazuh SCA checks](https://github.com/zbalkan/wazuhscatune/blob/main/assets/review.png "Review Wazuh SCA checks")
+![Review Wazuh SCA checks](https://github.com/zbalkan/wazuhscatune/raw/main/assets/review.png "Review Wazuh SCA checks")
 
 ## Requirements
 
@@ -39,7 +39,7 @@ wazuhscatune
 
 The application listens on `http://127.0.0.1:5000` and opens the local browser. If the browser does not open automatically, open that address manually.
 
-![Upload Wazuh SCA file](https://github.com/zbalkan/wazuhscatune/blob/main/assets/upload.png "Upload Wazuh SCA file")
+![Upload Wazuh SCA file](https://github.com/zbalkan/wazuhscatune/raw/main/assets/upload.png "Upload Wazuh SCA file")
 
 ## Workflow
 
@@ -82,8 +82,11 @@ python -m twine check --strict dist/*
 
 Python 3.11 is the compatibility floor. `pyproject.toml` is the authoritative package and dependency declaration.
 
-Release history is kept in [`CHANGELOG.md`](https://github.com/zbalkan/wazuhscatune/blob/main/CHANGELOG.md).
+Release history is kept in [`CHANGELOG.md`][def1].
 
 ## License
 
-GNU General Public License v3 or later. See `LICENSE`.
+GNU General Public License v3 or later. See [`LICENSE`][def2].
+
+[def1]: https://github.com/zbalkan/wazuhscatune/blob/main/CHANGELOG.md
+[def2]: https://github.com/zbalkan/wazuhscatune/blob/main/LICENSE

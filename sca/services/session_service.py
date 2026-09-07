@@ -107,11 +107,15 @@ class SessionService:
     @staticmethod
     def serialize_session_data(baseline_filename: str, custom_name: str,
                                sanitized_name: str, custom_description: str,
-                               decisions: dict[str, Any]) -> dict[str, Any]:
-        return {'schema_version': DRAFT_SCHEMA_VERSION,
+                               decisions: dict[str, Any],
+                               record_generated_at: str | None = None) -> dict[str, Any]:
+        data = {'schema_version': DRAFT_SCHEMA_VERSION,
                 'baseline_filename': baseline_filename, 'custom_name': custom_name,
                 'sanitized_name': sanitized_name,
                 'custom_description': custom_description, 'decisions': decisions}
+        if record_generated_at is not None:
+            data['record_generated_at'] = record_generated_at
+        return data
 
     def cleanup_review_files(self, upload_folder: str, ttl_hours: int) -> set[Path]:
         """Expire draft/baseline pairs and return baselines owned by active drafts."""

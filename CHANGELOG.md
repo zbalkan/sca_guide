@@ -2,6 +2,11 @@
 
 Notable user-facing changes are recorded here. Routine refactoring and test-only changes do not need an entry.
 
+## 0.2.1
+
+- Added deterministic export regression tests
+- Added deterministic export regression tests and reused persisted record timestamp on re-export
+
 ## 0.2.0
 
 - Added a distinct **Not Applicable** review state for checks that do not apply to the target system or role.
