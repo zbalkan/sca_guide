@@ -24,15 +24,22 @@
                 <div class="stat-value">{{ stats.exceptions }}</div>
                 <div class="stat-label">Exceptions</div>
             </div>
-            <div class="stat-card"><div class="stat-value">{{ stats.unreviewed }}</div><div class="stat-label">Unreviewed</div></div>
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.not_applicable }}</div>
+                <div class="stat-label">Not Applicable</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.unreviewed }}</div>
+                <div class="stat-label">Unreviewed</div>
+            </div>
         </div>
     </div>
 
-    {% if excluded_checks %}
+    {% if exception_checks %}
     <div class="excluded-section">
         <h3>Exceptions</h3>
         <div class="excluded-list">
-            {% for check in excluded_checks %}
+            {% for check in exception_checks %}
             <div class="excluded-item">
                 <div class="excluded-header">
                     <span class="excluded-id">Check #{{ check.id }}</span>
@@ -45,9 +52,30 @@
             {% endfor %}
         </div>
     </div>
-    {% else %}
+    {% endif %}
+
+    {% if not_applicable_checks %}
+    <div class="excluded-section">
+        <h3>Not Applicable</h3>
+        <div class="excluded-list">
+            {% for check in not_applicable_checks %}
+            <div class="excluded-item">
+                <div class="excluded-header">
+                    <span class="excluded-id">Check #{{ check.id }}</span>
+                    <span class="excluded-title">{{ check.title }}</span>
+                </div>
+                <div class="excluded-justification">
+                    <strong>Justification:</strong> {{ check.justification }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if not exception_checks and not not_applicable_checks %}
     <div class="no-exclusions">
-        <p>No exceptions were recorded. Every baseline check remains in the tailored policy.</p>
+        <p>No checks were removed. Every baseline check remains in the tailored policy.</p>
     </div>
     {% endif %}
 
@@ -87,13 +115,13 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             loadingOverlay.style.display = 'none';
-            
+
             if (data.success) {
                 showToast('Export successful! Downloading...', 'success');
-                
+
                 // Download the file
                 window.location.href = data.download_url;
-                
+
                 // Show completion options
                 setTimeout(() => {
                     if (confirm('Export completed! Would you like to start a new session?')) {
