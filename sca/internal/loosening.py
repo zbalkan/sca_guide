@@ -11,6 +11,15 @@ class TailoringRemoval:
     check: Check
 
 
+class TailoringException(TailoringRemoval):
+    def __init__(self, justification: str, exception_check: Check) -> None:
+        super().__init__(
+            decision=DecisionType.EXCEPTION,
+            justification=justification,
+            check=exception_check,
+        )
+
+
 @dataclass
 class Tailoring:
     name: str
