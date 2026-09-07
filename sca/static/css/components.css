@@ -276,6 +276,10 @@ body.review-layout .app-main > .container {
     margin-bottom: var(--spacing-xs);
 }
 
+.approval-page .summary-stats {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
 @media (max-width: 900px) {
     .review-workspace {
         grid-template-columns: 1fr;
