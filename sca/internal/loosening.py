@@ -1,12 +1,14 @@
 from dataclasses import dataclass, field
 
+from sca.internal.review import DecisionType
 from sca.internal.sca import Check
 
 
 @dataclass
-class TailoringException:
+class TailoringRemoval:
+    decision: DecisionType
     justification: str
-    exception_check: Check
+    check: Check
 
 
 @dataclass
@@ -14,4 +16,4 @@ class Tailoring:
     name: str
     id: str
     description: str
-    decisions: dict[int, TailoringException] = field(default_factory=dict)
+    decisions: dict[int, TailoringRemoval] = field(default_factory=dict)
