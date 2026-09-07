@@ -10,7 +10,7 @@ from ruamel.yaml.comments import CommentedMap
 from sca.config import VERSION
 from sca.internal.loosening import Tailoring
 from sca.internal.review import DecisionType
-from sca.internal.sca import SCA
+from sca.internal.sca import Compliance, SCA
 
 ENCODING = 'UTF-8'
 
@@ -32,9 +32,9 @@ def _sha256(path: str) -> str:
         return hashlib.sha256(stream.read()).hexdigest()
 
 
-def _compliance_text(compliance: list[dict[str, list[object]]]) -> str:
+def _compliance_text(compliance: list[Compliance] | None) -> str:
     values: list[str] = []
-    for mapping in compliance:
+    for mapping in compliance or []:
         for framework, identifiers in mapping.items():
             values.append(f"{framework}: {', '.join(str(value) for value in identifiers)}")
     return '; '.join(values) if values else '—'
