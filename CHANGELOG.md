@@ -2,6 +2,12 @@
 
 Notable user-facing changes are recorded here. Routine refactoring and test-only changes do not need an entry.
 
+## 0.2.0
+
+- Added a distinct **Not Applicable** review state for controls that do not apply to the target platform or role.
+- Changed the exception-record format to separate accepted-risk exceptions from not-applicable checks.
+- Added baseline compliance mappings to removed-check records and to the Markdown export.
+
 ## 0.1.1
 
 - Added ZIP digest validation during upload.
