@@ -19,6 +19,7 @@
         <p class="progress-text">
             <span id="reviewed-count">{{ stats.reviewed }}</span> of <span id="total-count">{{ checks|length }}</span> checks reviewed
             (<span id="excluded-count">{{ stats.exceptions }}</span> exceptions,
+            <span id="not-applicable-count">{{ stats.not_applicable }}</span> not applicable,
             <span id="unreviewed-count">{{ stats.unreviewed }}</span> unreviewed,
             <span id="effective-count">{{ stats.effective_included }}</span> effective checks)
         </p>
@@ -32,6 +33,7 @@
                 <div class="review-status-filters">
                     <label><input type="checkbox" name="status" value="accepted" checked> Accepted</label>
                     <label><input type="checkbox" name="status" value="exception" checked> Exceptions</label>
+                    <label><input type="checkbox" name="status" value="not_applicable" checked> Not Applicable</label>
                     <label><input type="checkbox" name="status" value="unreviewed" checked> Unreviewed</label>
                 </div>
                 <button class="btn btn-outline btn-small" id="clear-filters-btn" type="button">Clear Filters</button>
@@ -97,11 +99,15 @@
                             <input type="radio" name="decision" value="exclude">
                             <span>Record an exception</span>
                         </label>
+                        <label class="radio-option">
+                            <input type="radio" name="decision" value="not_applicable">
+                            <span>Mark as Not Applicable</span>
+                        </label>
                     </div>
                     <div class="justification-area" id="justification-area" hidden>
                         <label for="justification-input">Justification <span class="required">*</span></label>
                         <textarea id="justification-input" class="form-textarea"
-                                  placeholder="Enter justification (10-1000 characters)"
+                                  placeholder="Explain why this check is removed (10-1000 characters)"
                                   minlength="10" maxlength="1000" rows="5"></textarea>
                         <div class="char-count"><span id="just-char-count">0</span>/1000</div>
                     </div>
