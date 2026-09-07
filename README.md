@@ -1,12 +1,13 @@
 # wazuhscatune
 
-`wazuhscatune` is a local application for tailoring a trusted Wazuh Security Configuration Assessment (SCA) baseline. It opens a browser-based review UI where each check is either accepted or recorded as an exception with a justification.
+`wazuhscatune` is a local application for tailoring a trusted Wazuh Security Configuration Assessment (SCA) baseline. It opens a browser-based review UI where every check is explicitly accepted, recorded as an exception, or marked as not applicable.
 
 Review states:
 
 - **Unreviewed** — not yet explicitly reviewed.
 - **Accepted** — retained in the tailored policy.
-- **Exception** — justified and removed from the tailored policy. It means there may be a legitimate justification not to implement it or an alternative method exists to meet the purpose of the control.
+- **Exception** — removed with a justification because the check applies but the deviation is intentionally accepted, for example because risk is accepted or an alternative control is used.
+- **Not Applicable** — removed with a justification because the check does not apply to the target system or role.
 
 ![Review Wazuh SCA checks](https://github.com/zbalkan/wazuhscatune/blob/main/assets/review.png "Review Wazuh SCA checks")
 
@@ -14,8 +15,7 @@ Review states:
 
 Python 3.11 or newer. Python 3.11, 3.12, and 3.13 are tested on Windows, macOS, and Linux.
 
-`wazuhscatune` is a local single-user application. Server deployment, multi-user operation, and use of the internal `sca` package as a Python library are not
-supported.
+`wazuhscatune` is a local single-user application. Server deployment, multi-user operation, and use of the internal `sca` package as a Python library are not supported.
 
 ## Install
 
@@ -43,16 +43,16 @@ The application listens on `http://127.0.0.1:5000` and opens the local browser. 
 
 ## Workflow
 
-1. Upload a Wazuh SCA `.yml`, `.yaml`, or a ZIP previously exported by    `wazuhscatune`.
+1. Upload a Wazuh SCA `.yml`, `.yaml`, or a ZIP previously exported by `wazuhscatune`.
 2. Name and describe the tailored policy.
-3. Review every check as accepted or as a justified exception.
+3. Review every check as accepted, as a justified exception, or as justified Not Applicable.
 4. Review the final decisions.
 5. Export a ZIP containing:
    - `<policy>.yml` — tailored SCA policy;
-   - `<policy>_exceptions.yml` — machine-readable exception record;
-   - `<policy>_exceptions.md` — human-readable exception record.
+   - `<policy>_exceptions.yml` — machine-readable removal record, split between accepted-risk exceptions and not-applicable checks;
+   - `<policy>_exceptions.md` — human-readable report with the same categories and baseline compliance mappings.
 
-Export is blocked until every check has been reviewed. The uploaded baseline is never modified.
+Exception and Not Applicable decisions both remove the check from the tailored policy. Export is blocked until every check has been reviewed, and at least one check must remain included. The uploaded baseline is never modified.
 
 ![Review decisions before export](https://github.com/zbalkan/wazuhscatune/raw/main/assets/approval.png "Review decisions before export")
 
@@ -64,7 +64,7 @@ The browser session lifetime is 24 hours. Uploads, drafts, session files, export
 
 ## Validation
 
-Input validation covers YAML syntax and expected Wazuh SCA structure, including policy metadata, requirements, checks, rule lists, compliance mappings, and unique integer check IDs. ZIP imports are bounded by upload, member-count, and extracted policy-size limits. The application does not execute SCA checks or emulate the Wazuh SCA engine.
+Input validation covers YAML syntax and expected Wazuh SCA structure, including policy metadata, requirements, checks, rule lists, compliance mappings, variables, and unique integer check IDs. ZIP imports are bounded by upload, member-count, and extracted policy-size limits. The application does not execute SCA checks or emulate the Wazuh SCA engine.
 
 ## Development
 
