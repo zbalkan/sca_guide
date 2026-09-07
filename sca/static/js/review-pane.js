@@ -10,6 +10,8 @@ class ReviewPane {
         this.list = document.getElementById('check-list');
         this.acceptRadio = document.querySelector('input[name="decision"][value="include"]');
         this.exceptionRadio = document.querySelector('input[name="decision"][value="exclude"]');
+        this.notApplicableRadio = document.querySelector(
+            'input[name="decision"][value="not_applicable"]');
         this.justificationArea = document.getElementById('justification-area');
         this.justificationInput = document.getElementById('justification-input');
         this.justificationCount = document.getElementById('just-char-count');
@@ -29,13 +31,11 @@ class ReviewPane {
         this.list.querySelectorAll('.check-row').forEach(row => {
             row.addEventListener('click', () => this.selectCheck(row.dataset.checkId));
         });
-        this.acceptRadio.addEventListener('change', () => {
-            this.markDirty();
-            this.updateDecisionForm();
-        });
-        this.exceptionRadio.addEventListener('change', () => {
-            this.markDirty();
-            this.updateDecisionForm();
+        [this.acceptRadio, this.exceptionRadio, this.notApplicableRadio].forEach(radio => {
+            radio.addEventListener('change', () => {
+                this.markDirty();
+                this.updateDecisionForm();
+            });
         });
         this.justificationInput.addEventListener('input', () => {
             this.markDirty();
@@ -76,6 +76,9 @@ class ReviewPane {
         const decision = this.decisions[id];
         if (decision?.decision === 'exception') {
             this.exceptionRadio.checked = true;
+            this.justificationInput.value = decision.justification || '';
+        } else if (decision?.decision === 'not_applicable') {
+            this.notApplicableRadio.checked = true;
             this.justificationInput.value = decision.justification || '';
         } else {
             this.acceptRadio.checked = true;
@@ -130,11 +133,11 @@ class ReviewPane {
     }
 
     updateDecisionForm() {
-        this.justificationArea.hidden = !this.exceptionRadio.checked;
+        this.justificationArea.hidden = this.acceptRadio.checked;
     }
 
     validateDecision() {
-        if (!this.exceptionRadio.checked) return null;
+        if (this.acceptRadio.checked) return null;
         const length = this.justificationInput.value.trim().length;
         if (length < 10) return 'Justification must be at least 10 characters';
         if (length > 1000) return 'Justification must not exceed 1000 characters';
@@ -150,7 +153,9 @@ class ReviewPane {
         }
 
         const checkId = this.currentCheckId;
-        const decision = this.exceptionRadio.checked ? 'exception' : 'accepted';
+        let decision = 'accepted';
+        if (this.exceptionRadio.checked) decision = 'exception';
+        if (this.notApplicableRadio.checked) decision = 'not_applicable';
         const justification = this.justificationInput.value.trim();
 
         this.saveInFlight = true;
@@ -198,11 +203,16 @@ class ReviewPane {
         const row = this.rowFor(checkId);
         if (!row) return;
         const status = row.querySelector('.card-status');
-        const isException = decision.decision === 'exception';
-        status.textContent = isException ? 'Exception' : 'Accepted';
-        status.dataset.status = isException ? 'exception' : 'accepted';
-        row.classList.toggle('excluded', isException);
-        row.classList.toggle('included', !isException);
+        const labels = {
+            accepted: 'Accepted',
+            exception: 'Exception',
+            not_applicable: 'Not Applicable',
+        };
+        const isRemoved = decision.decision !== 'accepted';
+        status.textContent = labels[decision.decision] || 'Unreviewed';
+        status.dataset.status = decision.decision;
+        row.classList.toggle('excluded', isRemoved);
+        row.classList.toggle('included', !isRemoved);
     }
 
     updateAllRows() {
@@ -214,13 +224,17 @@ class ReviewPane {
     calculateStats() {
         const total = this.checks.length;
         const reviewed = Object.keys(this.decisions).length;
-        const exceptions = Object.values(this.decisions).filter(item => item.decision === 'exception').length;
+        const exceptions = Object.values(this.decisions)
+            .filter(item => item.decision === 'exception').length;
+        const notApplicable = Object.values(this.decisions)
+            .filter(item => item.decision === 'not_applicable').length;
         return {
             total,
             reviewed,
             exceptions,
+            not_applicable: notApplicable,
             unreviewed: total - reviewed,
-            effective_included: total - exceptions,
+            effective_included: total - exceptions - notApplicable,
             review_completion: total ? reviewed / total * 100 : 0,
         };
     }
@@ -229,6 +243,7 @@ class ReviewPane {
         document.getElementById('total-count').textContent = stats.total;
         document.getElementById('reviewed-count').textContent = stats.reviewed;
         document.getElementById('excluded-count').textContent = stats.exceptions;
+        document.getElementById('not-applicable-count').textContent = stats.not_applicable;
         document.getElementById('unreviewed-count').textContent = stats.unreviewed;
         document.getElementById('effective-count').textContent = stats.effective_included;
         document.getElementById('progress-fill').style.width = `${stats.review_completion}%`;
