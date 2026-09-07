@@ -185,14 +185,20 @@ def calculate_stats(guide: Guide, decisions: dict[str, Any]) -> dict[str, Any]:
     baseline_ids = {check.id for check in guide.sca.checks}
     normalized = normalize_decisions(decisions, baseline_ids)
     reviewed = len(normalized)
-    exceptions = sum(value.decision is DecisionType.EXCEPTION for value in normalized.values())
+    exceptions = sum(
+        value.decision is DecisionType.EXCEPTION for value in normalized.values())
+    not_applicable = sum(
+        value.decision is DecisionType.NOT_APPLICABLE for value in normalized.values())
+    accepted = sum(
+        value.decision is DecisionType.ACCEPTED for value in normalized.values())
     total = len(baseline_ids)
     return {
         'total': total,
         'unreviewed': total - reviewed,
-        'accepted': reviewed - exceptions,
+        'accepted': accepted,
         'exceptions': exceptions,
-        'effective_included': total - exceptions,
+        'not_applicable': not_applicable,
+        'effective_included': total - exceptions - not_applicable,
         'reviewed': reviewed,
         'review_completion': (reviewed / total * 100) if total else 0,
     }
