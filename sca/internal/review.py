@@ -23,6 +23,11 @@ def _is_meaningful(text: str) -> bool:
 class DecisionType(str, Enum):
     ACCEPTED = "accepted"
     EXCEPTION = "exception"
+    NOT_APPLICABLE = "not_applicable"
+
+    @property
+    def removes_check(self) -> bool:
+        return self is not DecisionType.ACCEPTED
 
 
 @dataclass(frozen=True)
@@ -39,19 +44,22 @@ class ReviewDecision:
         try:
             kind = DecisionType(decision)
         except (TypeError, ValueError) as error:
-            raise ValueError("Field decision must be 'accepted' or 'exception'") from error
+            raise ValueError(
+                "Field decision must be 'accepted', 'exception', or 'not_applicable'"
+            ) from error
         if not isinstance(justification, str):
             raise ValueError("Field justification must be a string")
         text = justification.strip()
-        if kind is DecisionType.EXCEPTION:
+        if kind.removes_check:
             if len(text) < 10:
-                raise ValueError("Justification must be at least 10 characters for an exception")
+                raise ValueError(
+                    "Justification must be at least 10 characters for a removed check")
             if not _is_meaningful(text):
                 raise ValueError(
                     "Justification must contain meaningful text, not repeated characters")
         if len(text) > 1000:
             raise ValueError("Justification must not exceed 1000 characters")
-        return cls(check_id, kind, text if kind is DecisionType.EXCEPTION else None)
+        return cls(check_id, kind, text if kind.removes_check else None)
 
     def to_session(self) -> dict[str, str]:
         value = {"decision": self.decision.value}
