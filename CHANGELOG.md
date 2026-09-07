@@ -4,9 +4,13 @@ Notable user-facing changes are recorded here. Routine refactoring and test-only
 
 ## 0.2.0
 
-- Added a distinct **Not Applicable** review state for controls that do not apply to the target platform or role.
-- Changed the exception-record format to separate accepted-risk exceptions from not-applicable checks.
-- Added baseline compliance mappings to removed-check records and to the Markdown export.
+- Added a distinct **Not Applicable** review state for checks that do not apply to the target system or role.
+- Split exported removal records into accepted-risk exceptions and not-applicable checks while keeping the existing export filenames.
+- Added baseline compliance mappings to removed-check YAML records and Markdown reports.
+- Tightened Wazuh SCA validation for requirement conditions and variable names/values.
+- Fixed draft/baseline expiry so active drafts keep their uploaded baseline and expired review data is cleaned as one lifecycle unit.
+- Added versioned draft persistence with strict recovery normalization and clearer handling of corrupt draft state.
+- Preserved HTTP 413 responses for oversized uploads instead of converting them to generic upload failures.
 
 ## 0.1.1
 
