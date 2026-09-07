@@ -8,7 +8,7 @@ from flask.wrappers import Response
 from werkzeug import Response as wResponse
 
 from sca.internal.guide import Guide
-from sca.internal.loosening import Tailoring, TailoringException
+from sca.internal.loosening import Tailoring, TailoringRemoval
 from sca.internal.review import DecisionType, ReviewDecision, normalize_decisions
 from sca.routes.upload import sanitize_policy_name
 from sca.services.export_service import cleanup_export, export_policy
@@ -39,21 +39,25 @@ def approval_page() -> wResponse | str:
         if set(normalized) != baseline_ids:
             return redirect(url_for('review.review_page'))
 
-        excluded_checks = [
-            {
-                'id': check['id'],
-                'title': check['title'],
-                'justification': normalized[check['id']].justification or '',
-            }
-            for check in checks
-            if normalized[check['id']].decision is DecisionType.EXCEPTION
-        ]
+        def removed_checks(kind: DecisionType) -> list[dict[str, object]]:
+            return [
+                {
+                    'id': check['id'],
+                    'title': check['title'],
+                    'justification': normalized[check['id']].justification or '',
+                    'compliance': check['compliance'],
+                }
+                for check in checks
+                if normalized[check['id']].decision is kind
+            ]
+
         return render_template(
             'approval.html',
             custom_name=session.get('custom_name'),
             custom_description=session.get('custom_description'),
             stats=calculate_stats(guide, decisions),
-            excluded_checks=excluded_checks,
+            exception_checks=removed_checks(DecisionType.EXCEPTION),
+            not_applicable_checks=removed_checks(DecisionType.NOT_APPLICABLE),
         )
     except Exception:
         logger.exception("Unable to load approval page")
@@ -78,11 +82,11 @@ def export_files() -> tuple[Response, Literal[400]] | Response | tuple[Response,
         if set(normalized) != baseline_ids:
             return jsonify({'error': 'All checks must be reviewed before export.'}), 400
 
-        excluded_ids = {
+        removed_ids = {
             check_id for check_id, value in normalized.items()
-            if value.decision is DecisionType.EXCEPTION
+            if value.decision.removes_check
         }
-        if excluded_ids == baseline_ids:
+        if removed_ids == baseline_ids:
             return jsonify({'error': 'At least one check must remain included'}), 400
 
         custom_name = session.get('custom_name')
@@ -104,10 +108,12 @@ def export_files() -> tuple[Response, Literal[400]] | Response | tuple[Response,
             description=f"{custom_description} (Based on {guide.sca.policy.name})",
         )
         for check in guide.sca.checks:
-            if check.id in excluded_ids:
-                tailoring.decisions[check.id] = TailoringException(
-                    justification=normalized[check.id].justification or '',
-                    exception_check=check,
+            if check.id in removed_ids:
+                decision = normalized[check.id]
+                tailoring.decisions[check.id] = TailoringRemoval(
+                    decision=decision.decision,
+                    justification=decision.justification or '',
+                    check=check,
                 )
 
         previous_path = None
