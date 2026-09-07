@@ -180,6 +180,11 @@ body.review-layout .app-main > .container {
     color: #991b1b;
 }
 
+.card-status[data-status="not_applicable"] {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
 .card-status[data-status="unreviewed"] {
     background-color: #e5e7eb;
     color: #374151;
