@@ -4,7 +4,7 @@ class FilterController {
         this.checks = checks;
         this.reviewPane = reviewPane;
         this.activeFilters = {
-            status: ['accepted', 'exception', 'unreviewed'],
+            status: ['accepted', 'exception', 'not_applicable', 'unreviewed'],
             searchText: '',
             impactSearchText: '',
         };
@@ -66,7 +66,7 @@ class FilterController {
         document.getElementById('search-input').value = '';
         document.getElementById('impact-search-input').value = '';
         this.activeFilters = {
-            status: ['accepted', 'exception', 'unreviewed'],
+            status: ['accepted', 'exception', 'not_applicable', 'unreviewed'],
             searchText: '',
             impactSearchText: '',
         };
