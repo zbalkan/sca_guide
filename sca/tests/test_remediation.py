@@ -80,8 +80,9 @@ def test_decision_api_validation_and_normalized_stats(tmp_path):
         'check_id': 1, 'decision': 'exception',
         'justification': 'Needed | for\nlegacy \\ app'})
     assert response.json['stats'] == {
-        'total': 2, 'accepted': 0, 'exceptions': 1, 'unreviewed': 1,
-        'effective_included': 1, 'reviewed': 1, 'review_completion': 50.0}
+        'total': 2, 'accepted': 0, 'exceptions': 1, 'not_applicable': 0,
+        'unreviewed': 1, 'effective_included': 1, 'reviewed': 1,
+        'review_completion': 50.0}
 
 
 def test_decision_api_rejects_all_invalid_justification_types(tmp_path):
@@ -115,7 +116,9 @@ def test_export_preserves_source_and_writes_provenance(tmp_path):
 
     assert [check['id'] for check in tailored['checks']] == [2]
     assert tailored['checks'][0] == original['checks'][1]
-    assert record['exceptions'][0]['check_id'] == 1
+    assert record['exceptions']['accepted_risk'][0]['check_id'] == 1
+    assert record['exceptions']['accepted_risk'][0]['compliance'] == [{'cis': ['1.1']}]
+    assert record['exceptions']['not_applicable'] == []
     assert len(record['baseline']['sha256']) == 64
     assert record['tailored_policy']['id'] == 'tailored'
     assert record['tailored_policy']['file'] == 'tailored.yml'
